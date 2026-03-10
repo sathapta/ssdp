@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSDP Attack Simulator Dashboard</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="dark-theme">
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header panel">
+            <div class="header-left">
+                <h1>SSDP Attack Simulator</h1>
+                <span class="subtitle">UDP Port 1900 Distributed Reflection Simulation</span>
+            </div>
+            <div class="header-right">
+                <div class="mode-selector">
+                    <label>Simulation Mode:</label>
+                    <select id="simMode" class="mode-select">
+                        <option value="normal">🟢 Normal Mode (LAN)</option>
+                        <option value="attack">🔴 Attack Mode (DrDoS)</option>
+                        <option value="mitigation">🛡️ Mitigation Mode</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area: Maps and Mitigations -->
+        <div class="main-content">
+            <!-- Left: Topology View -->
+            <section class="panel topology-panel">
+                <div class="panel-header">
+                    <h2>Network Topology View</h2>
+                    <div class="legend">
+                        <span class="legend-item"><span class="dot normal-dot"></span> LAN SSDP</span>
+                        <span class="legend-item"><span class="dot spoofed-dot"></span> Spoofed Request</span>
+                        <span class="legend-item"><span class="dot amplified-dot"></span> Amplified Response</span>
+                    </div>
+                </div>
+                <div class="topology-container" id="topologyContainer">
+                    <!-- SVG Topology diagram will go here -->
+                </div>
+            </section>
+
+            <!-- Right: Mitigations and Controls -->
+            <section class="panel mitigation-panel">
+                <div class="panel-header">
+                    <h2>🛡️ Mitigation Controls</h2>
+                </div>
+                <div class="mitigation-layers">
+                    <!-- IGW -->
+                    <div class="layer-control">
+                        <h3>IGW (Internet Gateway)</h3>
+                        <label class="toggle-control">
+                            <input type="checkbox" id="mitig_igw_urpf" disabled>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">BCP38/uRPF (Drop Spoofed IP)</span>
+                        </label>
+                        <label class="toggle-control">
+                            <input type="checkbox" id="mitig_igw_rate" disabled>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Rate Limit UDP 1900 Inbound</span>
+                        </label>
+                    </div>
+
+                    <!-- BGW -->
+                    <div class="layer-control">
+                        <h3>BGW (Broadband Gateway)</h3>
+                        <label class="toggle-control">
+                            <input type="checkbox" id="mitig_bgw_acl" disabled>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">ACL Block UDP 1900 from WAN</span>
+                        </label>
+                    </div>
+
+                    <!-- BNG -->
+                    <div class="layer-control">
+                        <h3>BNG (Broadband Network Gateway)</h3>
+                        <label class="toggle-control">
+                            <input type="checkbox" id="mitig_bng_rate" disabled>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Per-Subscriber Rate Limit</span>
+                        </label>
+                    </div>
+
+                    <!-- CPE -->
+                    <div class="layer-control">
+                        <h3>CPE (Customer Router)</h3>
+                        <label class="toggle-control">
+                            <input type="checkbox" id="mitig_cpe_fw" disabled>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Disable WAN-side SSDP</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="attack-params mt-4">
+                    <h3>Attack Parameters</h3>
+                    <div class="param-row">
+                        <label>Attack Rate (pps):</label>
+                        <input type="range" id="param_rate" min="10" max="1000" step="10" value="100" disabled>
+                        <span id="param_rate_val">100</span>
+                    </div>
+                    <div class="param-row">
+                        <label>Reflectors (CPEs):</label>
+                        <input type="range" id="param_reflectors" min="1" max="50" step="1" value="10" disabled>
+                        <span id="param_reflectors_val">10</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Metrics Dashboard -->
+        <section class="panel metrics-panel">
+            <div class="metric-card">
+                <div class="metric-title">Victim Bandwidth</div>
+                <div class="metric-value warning" id="metric_bw">0.00 <span class="unit">Mbps</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Packet Rate (Target)</div>
+                <div class="metric-value" id="metric_pps">0 <span class="unit">pps</span></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Packets Blocked</div>
+                <div class="metric-value safe" id="metric_blocked">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Amplification Factor</div>
+                <div class="metric-value" id="metric_amp">30x</div>
+            </div>
+        </section>
+
+        <!-- Packet Inspector -->
+        <section class="panel inspector-panel">
+            <div class="panel-header">
+                <h2>📋 Packet Inspector (Real-time)</h2>
+                <div class="inspector-controls">
+                    <button id="btnPause" class="btn btn-secondary">Pause Feed</button>
+                    <button id="btnClear" class="btn btn-secondary">Clear Log</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="packetTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Time</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Proto</th>
+                            <th>Info</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packetLogBody">
+                        <!-- Packets go here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/simulation.js"></script>
+    <script src="js/mitigation.js"></script>
+    <script src="js/topology.js"></script>
+    <script src="js/metrics.js"></script>
+    <script src="js/packet-log.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

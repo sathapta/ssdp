@@ -1,0 +1,132 @@
+/* Topology Node Styles */
+.node-circle {
+    fill: #1e293b;
+    stroke: #475569;
+    stroke-width: 3;
+    transition: all 0.3s ease;
+}
+
+.node-group:hover .node-circle {
+    stroke: #94a3b8;
+    filter: drop-shadow(0 0 8px rgba(148, 163, 184, 0.5));
+}
+
+.node-text {
+    fill: #f8fafc;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 14px;
+    text-anchor: middle;
+    pointer-events: none;
+}
+
+.node-subtext {
+    fill: #94a3b8;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    text-anchor: middle;
+    pointer-events: none;
+}
+
+/* Node States */
+.node-attack .node-circle {
+    stroke: var(--status-attack);
+    filter: drop-shadow(0 0 10px var(--status-attack-glow));
+}
+
+.node-protect .node-circle {
+    stroke: var(--status-normal);
+    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.5));
+}
+
+.node-target .node-circle {
+    stroke: #f59e0b;
+    filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+}
+
+/* Link Styles */
+.link-line {
+    fill: none;
+    stroke: #334155;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke 0.3s ease;
+}
+
+/* Base Packet Style (Moving Dot) */
+.packet {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    /* Center the dot on its left/top coords */
+    pointer-events: none;
+    z-index: 10;
+    will-change: left, top, opacity;
+}
+
+/* Packet Types */
+.packet-lan {
+    width: 6px;
+    height: 6px;
+    background-color: var(--status-normal);
+    box-shadow: 0 0 8px 2px var(--status-normal);
+    /* Set custom paths via JS inline styles */
+}
+
+.packet-spoofed {
+    width: 6px;
+    height: 6px;
+    background-color: var(--status-attack);
+    box-shadow: 0 0 10px 2px var(--status-attack-glow);
+}
+
+.packet-amp {
+    width: 12px;
+    height: 12px;
+    background-color: var(--status-amp);
+    box-shadow: 0 0 12px 3px rgba(245, 158, 11, 0.6);
+}
+
+/* Drop Animation */
+@keyframes dropPacket {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translate(-50%, -50%) scale(2);
+        background-color: white;
+        box-shadow: 0 0 15px white;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+}
+
+.packet-dropping {
+    animation: dropPacket 0.3s ease-out forwards;
+}
+
+/* Fade Out Animation (for normal completion) */
+@keyframes fadeOutPacket {
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+}
+
+.packet-fading {
+    animation: fadeOutPacket 0.2s ease-out forwards;
+}
+
+/* Specific Link Activations (optional highlights) */
+.link-active-attack {
+    stroke: rgba(239, 68, 68, 0.3);
+}
+
+.link-active-normal {
+    stroke: rgba(16, 185, 129, 0.3);
+}
