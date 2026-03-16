@@ -6,27 +6,32 @@ class NetworkTopology {
 
         // Logical Node Definitions
         this.nodes = {
-            attacker: { x: 50, y: 150, label: "Attacker\n(Spoofed IP)", type: "external" },
-            internet: { x: 180, y: 150, label: "Internet", type: "cloud" },
-            igw: { x: 330, y: 150, label: "IGW\n(Layer 1)", type: "router" },
-            bgw: { x: 480, y: 150, label: "BGW\n(Layer 2)", type: "router" },
-            bng: { x: 630, y: 150, label: "BNG\n(Layer 3)", type: "router" },
-            cpe: { x: 780, y: 150, label: "CPE\n(Public IP)", type: "router" },
-            lan: { x: 910, y: 150, label: "LAN Devices\n(UPnP)", type: "device" },
-            victim: { x: 550, y: 280, label: "Victim\n(Target)", type: "external" }
+            attacker: { x: 50,  y: 150, label: "Attacker\n(Spoofed IP)", type: "attacker" },
+            internet: { x: 180, y: 150, label: "Internet",                type: "cloud" },
+            igw:      { x: 310, y: 150, label: "IGW\n(Layer 1)",          type: "router" },
+            bgw:      { x: 440, y: 150, label: "BGW\n(Layer 2)",          type: "router" },
+            bng:      { x: 570, y: 150, label: "BNG\n(Layer 3)",          type: "router" },
+            cpe:      { x: 700, y: 150, label: "CPE\n(Public IP)",        type: "cpe" },
+            lan1:     { x: 870, y: 60,  label: "Device 1\n(UPnP)",        type: "device" },
+            lan2:     { x: 870, y: 150, label: "Device 2\n(UPnP)",        type: "device" },
+            lan3:     { x: 870, y: 240, label: "Device 3\n(UPnP)",        type: "device" },
+            victim:   { x: 440, y: 300, label: "Victim\n(Target)",        type: "victim" }
         };
 
         // Network Links (Edges)
         this.links = [
             { source: 'attacker', target: 'internet' },
             { source: 'internet', target: 'igw' },
-            { source: 'igw', target: 'bgw' },
-            { source: 'bgw', target: 'bng' },
-            { source: 'bng', target: 'cpe', label: 'PPPoE' },
-            { source: 'cpe', target: 'lan', label: 'LAN' },
+            { source: 'igw',      target: 'bgw' },
+            { source: 'bgw',      target: 'bng' },
+            { source: 'bng',      target: 'cpe', label: 'PPPoE' },
+            // CPE fans out to 3 LAN devices
+            { source: 'cpe',  target: 'lan1', label: 'LAN' },
+            { source: 'cpe',  target: 'lan2' },
+            { source: 'cpe',  target: 'lan3' },
 
-            // Return Path for Amplified response (simulated routing via Internet)
-            { source: 'cpe', target: 'bng', hidden: true }, // bi-directional logic
+            // Return Path for Amplified responses (reverse through ISPs)
+            { source: 'cpe', target: 'bng', hidden: true },
             { source: 'bng', target: 'bgw', hidden: true },
             { source: 'bgw', target: 'igw', hidden: true },
             { source: 'igw', target: 'internet', hidden: true },
@@ -54,7 +59,7 @@ class NetworkTopology {
         this.svg = document.createElementNS(this.svgNS, "svg");
         this.svg.setAttribute("width", "100%");
         this.svg.setAttribute("height", "100%");
-        this.svg.setAttribute("viewBox", "0 0 1000 350"); // Fixed coordinate system
+        this.svg.setAttribute("viewBox", "0 0 1000 380"); // Fixed coordinate system, tall for 3 LAN devices
         this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
         this.container.appendChild(this.svg);
 
@@ -102,6 +107,71 @@ class NetworkTopology {
         });
     }
 
+    // Returns an SVG icon element for a given node type
+    getNodeIcon(nodeId, type) {
+        const g = document.createElementNS(this.svgNS, "g");
+        g.setAttribute("class", "node-icon");
+
+        const addPath = (d, extraAttrs = {}) => {
+            const p = document.createElementNS(this.svgNS, "path");
+            p.setAttribute("d", d);
+            p.setAttribute("fill", "currentColor");
+            Object.entries(extraAttrs).forEach(([k, v]) => p.setAttribute(k, v));
+            g.appendChild(p);
+        };
+
+        switch (type) {
+            case 'attacker':
+                // Skull icon
+                g.setAttribute("transform", "translate(-10,-10) scale(1.25)");
+                addPath("M8 0a8 8 0 1 0 0 13.5H8A8 8 0 0 0 8 0zm0 1.5a6.5 6.5 0 1 1 0 10.6V12H5.5v-1H4v-.5a.5.5 0 0 0-.5-.5H3a.5.5 0 0 0-.5.5V12H1.5v1H0V12a8 8 0 0 0 8-10.5zM5.5 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z");
+                break;
+            case 'cloud':
+                // Cloud icon
+                g.setAttribute("transform", "translate(-13,-9) scale(1.6)");
+                addPath("M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z");
+                break;
+            case 'router':
+                // Circle Router Icon (Classic Networking Symbol)
+                g.setAttribute("transform", "translate(-12,-12) scale(1.5)");
+                // Inner circle
+                addPath("M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z", { opacity: 0.5 });
+                // Arrows (cross pattern)
+                addPath("M8 3.5a.5.5 0 0 1 .5.5v1.5h1.5a.5.5 0 0 1 0 1H8.5V8a.5.5 0 0 1-1 0V6.5H6a.5.5 0 0 1 0-1h1.5V4a.5.5 0 0 1 .5-.5z"); // Just a placeholder cross, let's do better arrows
+                addPath("M3.5 8a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1h-8a.5.5 0 0 1-.5-.5z"); // Horizontal line
+                addPath("M8 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0v-8a.5.5 0 0 1 .5-.5z"); // Vertical line
+                // Arrow heads
+                addPath("M7.5 4.5l.5-.5.5.5M7.5 11.5l.5.5.5-.5M4.5 7.5l-.5.5.5.5M11.5 7.5l.5.5-.5.5", { fill: "none", stroke: "currentColor", "stroke-width": "1" });
+                break;
+            case 'cpe':
+                // Home router with antennas
+                g.setAttribute("transform", "translate(-12,-10) scale(1.5)");
+                // Body
+                addPath("M2 9h12v3H2z");
+                // Antennas
+                addPath("M4 9V5M12 9V5", { fill: "none", stroke: "currentColor", "stroke-width": "1.2" });
+                // Front panel dots
+                addPath("M4 10.5h1v1H4zm3 0h1v1H7zm3 0h1v1H10z", { opacity: 0.8 });
+                break;
+            case 'device':
+                // Monitor / PC screen
+                g.setAttribute("transform", "translate(-9,-9) scale(1.12)");
+                addPath("M0 4s0-2 2-2h12s2 0 2 2v6s0 2-2 2h-4c0 .667.083 1.167.25 1.5H11a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1h.75c.167-.333.25-.833.25-1.5H2s-2 0-2-2V4zm1.398-.855L1 4v.01V10s0 1 1 1h12s1 0 1-1V4.01L14.602 3.145A1 1 0 0 0 14 3H2a1 1 0 0 0-.602.145z");
+                break;
+            case 'victim':
+                // Target / crosshair icon
+                g.setAttribute("transform", "translate(-10,-10) scale(1.25)");
+                addPath("M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z");
+                addPath("M8 13A5 5 0 1 1 8 3a5 5 0 0 1 0 10zm0 1A6 6 0 1 0 8 2a6 6 0 0 0 0 12z");
+                addPath("M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8z");
+                addPath("M9.5 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z");
+                break;
+            default:
+                break;
+        }
+        return g;
+    }
+
     drawNodes() {
         this.nodesLayer = document.createElementNS(this.svgNS, "g");
         this.svg.appendChild(this.nodesLayer);
@@ -120,7 +190,11 @@ class NetworkTopology {
             circle.setAttribute("class", "node-circle");
             group.appendChild(circle);
 
-            // Icon/Text container (Simplified for now using text)
+            // Proper SVG icon inside the circle
+            const icon = this.getNodeIcon(nodeId, nodeInfo.type);
+            group.appendChild(icon);
+
+            // Label text above the node
             const lines = nodeInfo.label.split('\n');
             const mainText = document.createElementNS(this.svgNS, "text");
             mainText.setAttribute("class", "node-text");
@@ -162,7 +236,7 @@ class NetworkTopology {
 
         // ViewBox dimensions
         const vbW = 1000;
-        const vbH = 350;
+        const vbH = 380;
 
         // Container dimensions
         const cW = this.svgRect.width;

@@ -5,7 +5,7 @@ class MitigationEngine {
         this.activeRules = {
             igw: { urpf: false, rate: false },
             bgw: { acl: false },
-            bng: { rate: false },
+            bng: { acl: false },
             cpe: { fw: false }
         };
     }
@@ -63,14 +63,11 @@ class MitigationEngine {
 
             if (node === 'bng') {
                 // Outbound amplified traffic or heavy inbound
-                if (this.activeRules.bng.rate) {
-                    // Simulating a per-subscriber throttle. Amplified response blocked mostly.
-                    if (packet.type === 'amp' && Math.random() > 0.05) {
-                        packet.status = 'blocked';
-                        packet.blockedAt = 'bng';
-                        packet.blockedBy = 'Per-Sub Rate Limit';
-                        return 'bng';
-                    }
+                if (this.activeRules.bng.acl && packet.dstPort === 1900) {
+                    packet.status = 'blocked';
+                    packet.blockedAt = 'bng';
+                    packet.blockedBy = 'ACL (Block 1900)';
+                    return 'bng';
                 }
             }
 

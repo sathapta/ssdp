@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         topology.setNodeState('attacker', isAttackOrMitig ? 'attack' : null);
         topology.setNodeState('victim', isAttackOrMitig ? 'target' : null);
         topology.setNodeState('cpe', isAttackOrMitig ? 'attack' : null);
+        topology.setNodeState('lan1', isAttackOrMitig ? 'attack' : null);
+        topology.setNodeState('lan2', isAttackOrMitig ? 'attack' : null);
+        topology.setNodeState('lan3', isAttackOrMitig ? 'attack' : null);
     });
 
     // Params
@@ -91,57 +94,56 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Simulation Core Loop Wiring ---
 
     simulation.onPacketGenerated = (packet) => {
-        // Normal LAN traffic (blue) doesn't hit mitigations
+        // Normal LAN traffic stays within the LAN nodes
         if (packet.type === 'lan') {
             topology.animatePacket('lan', packet.path, 800);
             inspector.logPacket(packet);
             return;
         }
 
-        // --- Attack Traffic ---
+        // --- Attack / Mitigation Traffic ---
 
-        // 1. Send the Request Through ISPs
+        // 1. Process inbound spoofed M-SEARCH through ISP layers
         const blockedAtReq = mitigation.processTraffic(packet);
 
-        // Render Request Path
-        topology.animatePacket(
-            packet.type,
-            packet.path,
-            800, // speed
-            blockedAtReq // where it drops
-        );
-
+        // Animate the spoofed request path (Attacker -> CPE)
+        topology.animatePacket(packet.type, packet.path, 800, blockedAtReq);
         inspector.logPacket(packet);
 
         if (blockedAtReq) {
             metrics.logBlockedPacket(packet.multiplier);
-            return; // Dropped! No amplification occurs.
+            return; // Blocked — no amplification occurs
         }
 
-        // 2. Request hit the CPE. Generate Amplified Response
-        const responsePacket = packet.theoreticalResponse();
+        // 2. Packet reached CPE — get the array of fan-out packets (one per LAN device)
+        const fanOuts = packet.theoreticalResponse();
 
-        // Send Response Through ISPs (outbound rules)
-        const blockedAtRes = mitigation.processTraffic(responsePacket);
+        fanOuts.forEach((fanOut, idx) => {
+            const deviceOffset = idx * 100; // Stagger fan-outs for visual clarity
 
-        // Render Response Path
-        setTimeout(() => {
-            topology.animatePacket(
-                responsePacket.type,
-                responsePacket.path,
-                800,
-                blockedAtRes
-            );
+            // Phase A: Animate CPE broadcasting M-SEARCH to this LAN device
+            setTimeout(() => {
+                topology.animatePacket(fanOut.type, fanOut.path, 400);
+                inspector.logPacket(fanOut);
 
-            inspector.logPacket(responsePacket);
+                // Phase B: After the request reaches the LAN device, animate the amplified response
+                setTimeout(() => {
+                    const responsePacket = fanOut.deviceResponse;
+                    const blockedAtRes = mitigation.processTraffic(responsePacket);
 
-            if (blockedAtRes) {
-                metrics.logBlockedPacket(responsePacket.multiplier);
-            } else {
-                // Victim gets hit
-                metrics.logAttackPacketArrived(responsePacket.size, responsePacket.multiplier);
-            }
-        }, 850); // Delay so it visually happens after request arrives
+                    topology.animatePacket(responsePacket.type, responsePacket.path, 900, blockedAtRes);
+                    inspector.logPacket(responsePacket);
+
+                    if (blockedAtRes) {
+                        metrics.logBlockedPacket(responsePacket.multiplier);
+                    } else {
+                        // Victim gets hit
+                        metrics.logAttackPacketArrived(responsePacket.size, responsePacket.multiplier);
+                    }
+                }, 450); // Wait for CPE->Device traversal before firing response
+
+            }, 820 + deviceOffset); // Wait for inbound spoofed packet to reach CPE
+        });
     };
 
     // Main interval driver

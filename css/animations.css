@@ -29,6 +29,24 @@
 }
 
 /* Node States */
+.node-icon {
+    color: #94a3b8;
+    transition: color 0.3s ease;
+    pointer-events: none;
+}
+
+.node-attack .node-icon {
+    color: var(--status-attack);
+}
+
+.node-protect .node-icon {
+    color: var(--status-normal);
+}
+
+.node-target .node-icon {
+    color: #f59e0b;
+}
+
 .node-attack .node-circle {
     stroke: var(--status-attack);
     filter: drop-shadow(0 0 10px var(--status-attack-glow));

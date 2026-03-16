@@ -4,43 +4,46 @@ An interactive, educational dashboard designed for junior network engineers to u
 
 ## 🚀 Features
 
+*   **Advanced Attack Flow (Fan-out Model):**
+    *   Simulates realistic DrDoS where a single CPE acts as a gateway to multiple internal LAN devices.
+    *   A spoofed M-SEARCH request hits the CPE and "fans out" to multiple LAN devices.
+    *   Each LAN device independently generates an amplified response back to the victim.
 *   **Interactive Simulation Modes:**
-    *   `Normal Mode`: Demonstrates standard LAN-based SSDP M-SEARCH traffic.
-    *   `Attack Mode`: Simulates a Distributed Reflection Denial of Service (DrDoS) attack utilizing source-IP spoofing to trick CPEs into amplifying traffic toward a victim.
-    *   `Mitigation Mode`: Allows toggling defensive rules across various network layers to observe their impact on the attack.
-*   **Real-time Visual Topology:**
-    *   Dynamic SVG network path mapping (`Attacker -> Internet -> IGW -> BGW -> BNG -> CPE -> LAN`).
-    *   Animated packet flows highlighting spoofed requests (red) and amplified responses (orange).
+    *   `Normal Mode`: Demonstrates standard LAN traffic between internal devices.
+    *   `Attack Mode`: Simulates the spoof-and-reflect cycle with high-volume DrDoS traffic.
+    *   `Mitigation Mode`: Allows toggling defensive rules to observe their real-time impact.
+*   **Premium Visual Topology:**
+    *   **Custom SVG Icons:** Detailed network symbols (Skull for Attacker, Cloud for Internet, Circle Routers for ISPs, Monitor for LAN devices).
+    *   **Dynamic Pathing:** Real-time animated paths across the entire stack (`Attacker -> Internet -> ISP Layers -> CPE -> Multiple LAN Devices`).
+    *   **Responsive Layout:** Compacted management panel designed to fit modern screens without excessive scrolling.
 *   **Multi-layer ISP Mitigations:**
-    *   **IGW (Tier 1):** BCP38/uRPF to drop spoofed IPs, and inbound UDP 1900 rate limiting.
-    *   **BGW (Tier 2):** ACL blocks on inbound UDP 1900 from the WAN.
-    *   **BNG (Tier 3):** Per-subscriber traffic rate limits.
-    *   **CPE (Customer):** Disabling WAN-side UPnP/SSDP responses.
+    *   **IGW (Tier 1):** BCP38/uRPF (Anti-spoofing) and Inbound Rate Limiting.
+    *   **BGW (Tier 2):** ACL Block for UDP 1900 from WAN.
+    *   **BNG (Tier 3):** Strict ACL Block for UDP 1900.
+    *   **CPE (Customer):** WAN-side SSDP firewall.
 *   **Live Metrics & Packet Inspector:**
-    *   Real-time counters for Victim Bandwidth (Mbps), Packet Rate (pps), Packets Blocked, and Amplification Factor.
-    *   A Wireshark-style packet log detailing source/destination IPs (including spoofed indicators) and packet status.
+    *   Real-time counters for Victim Bandwidth (Mbps), Packet Rate (pps), and Packets Blocked.
+    *   Live Wireshark-style stream showing packet lifecycle from generation to block/delivery.
 
 ## 🛠️ Technology Stack
 
-This project is built purely with frontend web technologies, requiring no backend or build tools, ensuring maximum portability.
+This project is built purely with frontend web technologies for maximum portability.
 
-*   **HTML5**
-*   **CSS3** (Variables, Grid, Flexbox, Keyframe Animations, Glassmorphism)
-*   **Vanilla JavaScript** (ES6+)
+*   **HTML5 / SVG** (Custom drawn vector networking icons)
+*   **CSS3** (Variables, Grid, Flexbox, Keyframe Animations, Neon Glows)
+*   **Vanilla JavaScript** (ES6+, Functional simulation logic)
 
 ## 💻 How to Run
 
-Because this is a static frontend application, no installation or web server is required.
-
-1.  Clone or download this repository to your local machine.
-2.  Open the `e:\ssdp` directory.
-3.  Double-click **`index.html`** to open it directly in your modern web browser (Chrome, Firefox, Edge, Safari).
+1.  Clone or download this repository.
+2.  Open the directory: `e:\ssdp`
+3.  Double-click **`index.html`** to run in any modern browser.
 
 ## 📖 Educational Context
 
-This simulator is designed to teach the mechanics of an Amplification Attack:
-1.  **Spoofing:** The attacker forges the Source IP address of their SSDP `M-SEARCH` request to match the IP of the *Victim*.
-2.  **Reflection:** The attacker sends this tiny crafted packet to millions of publicly exposed, vulnerable routers (CPEs). 
-3.  **Amplification:** The CPEs process the request and send a massive `HTTP 200 OK` device descriptor response back to the Source IP. Because the Source IP was spoofed, the massive response hits the Victim, overwhelming their bandwidth.
+This simulator teaches the **3 Phased DrDoS Cycle**:
+1.  **Spoofing:** The attacker forges the Source IP of a tiny 100-byte `M-SEARCH` request to match the Victim's IP.
+2.  **Reflection:** The request hits the CPE (gateway) which scatters it to internal UPnP devices.
+3.  **Amplification:** Every internal device responds with a massive (3,000+ byte) descriptor XML. These responses converge on the Victim simultaneously, creating a multi-Gbps flood from a tiny attacker stream.
 
-Mitigating these attacks requires defense-in-depth, preferably stopping the spoofed packets at the Internet Gateway (IGW) using Anti-Spoofing (BCP38) before they ever reach the vulnerable CPEs.
+Effective mitigation involves **Anti-Spoofing (BCP38)** at the Internet Gateway, which prevents spoofed traffic from even entering the ISP's network core.

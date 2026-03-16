@@ -181,22 +181,44 @@ body {
 /* Mitigations */
 .mitigation-panel {
     overflow-y: auto;
-    max-height: 380px;
-    /* Force an internal scroll if screen is too small */
+    max-height: 480px; /* Slightly more height allowed */
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-blue) var(--bg-panel-solid);
+}
+
+.mitigation-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mitigation-panel::-webkit-scrollbar-track {
+    background: var(--bg-panel-solid);
+    border-radius: 10px;
+}
+
+.mitigation-panel::-webkit-scrollbar-thumb {
+    background-color: var(--accent-blue);
+    border-radius: 10px;
+    border: 2px solid var(--bg-panel-solid);
+}
+
+.mitigation-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .layer-control {
-    margin-bottom: 0.75rem;
-    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+    padding: 0.4rem 0.6rem;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     border-left: 3px solid var(--accent-blue);
 }
 
 .layer-control h3 {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: var(--text-secondary);
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.25rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -206,7 +228,7 @@ body {
     display: flex;
     align-items: center;
     cursor: pointer;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     opacity: 0.5;
     transition: opacity 0.3s;
 }
